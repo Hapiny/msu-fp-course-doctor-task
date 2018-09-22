@@ -14,13 +14,18 @@
         ((equal? user-response '(goodbye)) 
             (printf "Goodbye, ~a!\n" name)
             (printf "See you next week\n"))
-        (else (print (reply user-response))
+        (else (print (reply user-response responses))
             (doctor-driver-loop name (remember-answer responses user-response))))))
 
-(define (reply user-response)
-    (let ((num (random 2)))
+(define (reply user-response responses)
+    (let ((num (random 3)))
         (cond ((= num 0) (qualifier-answer user-response))
+              ((= num 1) (if (null? responses) (reply user-response responses)
+                             (history-answer user-response responses)))
               (else (hedge)))))
+
+(define (history-answer user-response history)
+    (append '(earlier you said that) (change-person (pick-random history))))
 
 (define (remember-answer responses ans)
     (if (member ans responses) responses
@@ -66,7 +71,7 @@
     (map (lambda (word) (let ((x (assoc word replacement-pairs)))
                             (if x (cadr x) word))) lst))
 
-(trace many-replace)
+;(trace many-replace)
 
 (define (hedge)
     (pick-random '((please go on)
