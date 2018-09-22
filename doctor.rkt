@@ -42,7 +42,7 @@
 
 
 (define (change-person phrase)
-    (many-replace phrase '() 
+    (many-replace phrase 
       '((am are) 
         (are am)
         (i you) 
@@ -55,10 +55,17 @@
         (myself yourself) 
         (yourself myself))))
 
-(define (many-replace lst result replacement-pairs)
-        (cond ((null? lst) (reverse result))
-              (else (let ((pat-rep (assoc (car lst) replacement-pairs)))
-                        (many-replace (cdr lst) (cons (if pat-rep (cadr pat-rep) (car lst)) result) replacement-pairs)))))
+; (define (many-replace lst result replacement-pairs)
+;         (cond ((null? lst) (reverse result))
+;               (else (let ((pat-rep (assoc (car lst) replacement-pairs)))
+;                         (many-replace (cdr lst) 
+;                                       (cons (if pat-rep (cadr pat-rep) (car lst)) result) 
+;                                       replacement-pairs)))))
+
+(define (many-replace lst replacement-pairs)
+    (map (lambda (word) (let ((x (assoc word replacement-pairs)))
+                            (if x (cadr x) word))) lst))
+
 (trace many-replace)
 
 (define (hedge)
