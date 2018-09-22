@@ -1,21 +1,32 @@
 #lang scheme/base
 (require racket/trace)
 
-(define (visit-doctor name)
+(define (visit-doctor name stop-word num-clients)
     (printf "Hello, ~a!\n" name)
     (printf "What seems to be the trouble?")
-    (doctor-driver-loop name '()))
+    (doctor-driver-loop stop-word num-clients name '()))
 
-(define (doctor-driver-loop name responses)
+(define (ask-patient-name)
+    (printf "**    Invitation of the next patient    **\n")
+    (printf "Next!\n")
+    (printf "Who are you?\n")
+    (print '**)
+    (car (read)))
+
+(define (doctor-driver-loop stop-word counter name responses)
     (newline)
     (print '**)
     (let ((user-response (read)))
         (cond 
         ((equal? user-response '(goodbye)) 
             (printf "Goodbye, ~a!\n" name)
-            (printf "See you next week\n"))
+            (printf "See you next week\n")
+            (if (= counter 1) (printf "My work for today is over!\n")
+                (let ((new-client (ask-patient-name)))
+                    (if (equal? new-client stop-word) '(time to go home)
+                        (visit-doctor new-client stop-word (- counter 1))))))
         (else (print (reply user-response responses))
-            (doctor-driver-loop name (remember-answer responses user-response))))))
+            (doctor-driver-loop stop-word counter name (remember-answer responses user-response))))))
 
 (define (reply user-response responses)
     (let ((num (random 3)))
