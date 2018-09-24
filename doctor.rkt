@@ -29,11 +29,12 @@
             (doctor-driver-loop stop-word counter name (remember-answer responses user-response))))))
 
 (define (reply user-response responses)
-    (let ((num (random 3)))
+    (let ((num (random 6)))
         (cond ((= num 0) (qualifier-answer user-response))
               ((= num 1) (if (null? responses) (reply user-response responses)
-                             (history-answer user-response responses)))
-              (else (hedge)))))
+                            (history-answer user-response responses)))
+              ((= num 2) (hedge))
+              (else (if (trigger-pred user-response) (theme-answer user-response) (reply user-response responses))))))
 
 (define (history-answer user-response history)
     (append '(earlier you said that) (change-person (pick-random history))))
@@ -92,3 +93,47 @@
                    (tell me more in detail)
                    (it's very interesting, please continue)
                    (my wife often says so))))
+
+
+(define keys '( 
+    (
+        (depressed suicide exams university)
+        (
+            (when you feel depressed, go out for ice cream)
+            (depression is a disease that can be treated)
+        )
+    )
+    (
+        (mother father parents brother sister uncle aunt grandma grandpa)
+        (
+            (tell me more about your * , i want to know all about your *)
+            (why do you feel that way about your * ?)
+        )
+    )
+    (
+        (university scheme lections)
+        (
+            (your education is important)
+            (how many time do you spend to learning ?)
+            (you don`t need to attend lections)
+        )
+    )))
+
+(define key-words
+    (foldl (lambda (group y) (append (filter (lambda (w) (not (member w y))) (car group)) y))
+        '() keys))
+
+(define (trigger-pred user-response) 
+    (ormap (lambda (word) (if (member word key-words) #t #f)) user-response))
+
+(define (theme-answer user-response)
+    (define (match ur)
+        (filter (lambda (x) (member x key-words)) ur))
+    (define (helper group word)
+        (if (not (member word (car group))) '()
+            (cadr group)))
+    (let ((key (pick-random (match user-response))))
+        (many-replace 
+            (pick-random
+                (foldl (lambda (x result) (append (helper x key) result)) '() keys))
+                (list (list '* key)))))
