@@ -25,16 +25,23 @@
                 (let ((new-client (ask-patient-name)))
                     (if (equal? new-client stop-word) '(time to go home)
                         (visit-doctor new-client stop-word (- counter 1))))))
-        (else (print (reply user-response responses))
+        (else (print (reply user-response responses (list 
+                                                        (list (lambda (u h) #t) 1 (lambda (u h) (hedge)))
+                                                        (list (lambda (u h) #t) 3 (lambda (u h) (qualifier-answer u)))
+                                                        (list (lambda (u h) (not (null? h))) 4 (lambda (u h) (history-answer u h)))
+                                                        (list (lambda (u h) (trigger-pred u)) 15 (lambda (u h) (theme-answer u))))))
             (doctor-driver-loop stop-word counter name (remember-answer responses user-response))))))
 
-(define (reply user-response responses)
-    (let ((num (random 6)))
-        (cond ((= num 0) (qualifier-answer user-response))
-              ((= num 1) (if (null? responses) (reply user-response responses)
-                            (history-answer user-response responses)))
-              ((= num 2) (hedge))
-              (else (if (trigger-pred user-response) (theme-answer user-response) (reply user-response responses))))))
+(define (reply user-response responses strategies) 
+    (let ((good-strategies (filter (lambda (x) (not (null? x))) (map (lambda (x)
+                                (if ((car x) user-response responses)
+                                    (list (cadr x) (caddr x))
+                                    '()))
+                                strategies))
+         )) 
+        ((car (pick-random-with-weights good-strategies)) user-response responses)
+    )
+)
 
 (define (history-answer user-response history)
     (append '(earlier you said that) (change-person (pick-random history))))
@@ -101,6 +108,8 @@
         (
             (when you feel depressed, go out for ice cream)
             (depression is a disease that can be treated)
+            (stop crying weakling !)
+            (always look for occasions for joy)
         )
     )
     (
@@ -108,6 +117,24 @@
         (
             (tell me more about your * , i want to know all about your *)
             (why do you feel that way about your * ?)
+            (what is your relationship with your * ?)
+            (how often do you see your family ?)
+        )
+    )
+    (
+        (weather rain snow thunder)
+        (
+            (worse weather is expected)
+            (what time of year do you like more ?)
+            (i hope you took an umbrella if it rained)
+        )
+    )
+    (
+        (sport football tennis basketball swimming)
+        (
+            (do you have a favorite sport ?)
+            (do you follow the sporting events ?)
+            (do you do sports ?)
         )
     )
     (
@@ -116,6 +143,7 @@
             (your education is important)
             (how many time do you spend to learning ?)
             (you don`t need to attend lections)
+            (Steve Jobs and Bill Gates don`t have higher education)
         )
     )))
 
@@ -137,3 +165,31 @@
             (pick-random
                 (foldl (lambda (x result) (append (helper x key) result)) '() keys))
                 (list (list '* key)))))
+
+(define (sum-weights lst)
+    (foldl (lambda (x result) (+ result (car x))) 0 lst))
+
+; (define (pick-random-with-weights lst)
+;     (let ((rnd (+ 1 (random (sum-weights lst)))))
+;         (foldl (lambda (x y) 
+;             (let ( (count (+ (car y) (car x)))
+;                    (a1 (println (+ (car y) (car x))))
+;                    (a2 (println y))
+;                    (a3 (printf "Сurrent weight ~a\n" (car x)))
+;                    (a4 (printf "Random ~a\n"rnd)) ) 
+;                 (cond ((>= count rnd) (printf "БОЛЬШЕ\n") (printf "Count = ~a\n\n" count) (cons count (cdr y)))
+;                     (else (printf "МЕНЬШЕ\n") (printf "Count = ~a\n\n" count) (cons count (cdr y))))))
+;                (list 0 '()) lst)))
+
+(define (pick-random-with-weights lst)
+    (define (helper lst rnd counter result)
+        (if (null? lst) result
+            (if (>= (+ counter (caar lst)) rnd) 
+                (cond ((null? result) (cons (cadar lst) '())))
+                (helper (cdr lst) rnd (+ counter (caar lst)) result) 
+            )
+        )
+    )
+    (let ((r (+ 1 (random (sum-weights lst))))) 
+        (helper lst r 0 '()))
+)
